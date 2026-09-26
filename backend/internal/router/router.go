@@ -55,6 +55,8 @@ func Setup(
 		projects.GET("", projectHandler.List)
 		projects.GET("/org/my", middleware.Auth(authSvc), middleware.RequireRole(constants.RoleOrg), projectHandler.MyProjects)
 		projects.POST("", middleware.Auth(authSvc), middleware.RequireRole(constants.RoleOrg), projectHandler.Create)
+		projects.PUT("/:id", middleware.Auth(authSvc), middleware.RequireRole(constants.RoleOrg), projectHandler.Update)
+		projects.POST("/:id/status", middleware.Auth(authSvc), middleware.RequireRole(constants.RoleOrg), projectHandler.ChangeStatus)
 		projects.GET("/:id", projectHandler.GetDetail)
 		projects.GET("/:id/updates", projectHandler.Updates)
 		projects.POST("/:id/updates", middleware.Auth(authSvc), middleware.RequireRole(constants.RoleOrg), projectHandler.CreateUpdate)

@@ -64,12 +64,40 @@ const ProjectDetail = () => {
                 <span className="px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-medium">
                   {categoryMap[project.category]}
                 </span>
+                {project.status === 'paused' && (
+                  <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium">
+                    暂停筹款
+                  </span>
+                )}
                 {project.status === 'completed' && (
                   <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium">
                     已完成
                   </span>
                 )}
+                {project.status === 'pending' && (
+                  <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-medium">
+                    待审核
+                  </span>
+                )}
+                {project.status === 'rejected' && (
+                  <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-medium">
+                    未通过审核
+                  </span>
+                )}
+                {user?.role === 'org' && project.organization?.userId === user.id && (
+                  <Link
+                    to="/my-projects"
+                    className="ml-auto text-sm text-primary-600 hover:text-primary-700"
+                  >
+                    项目管理 →
+                  </Link>
+                )}
               </div>
+              {project.status === 'paused' && (
+                <div className="mb-6 px-4 py-3 bg-orange-50 border border-orange-200 text-orange-700 rounded-lg text-sm">
+                  本项目已暂停筹款，暂不接受新的捐赠。历史捐赠记录与电子凭证均完整保留，恢复筹款后可继续参与。
+                </div>
+              )}
               <h1 className="text-3xl font-bold text-gray-900 mb-4">{project.title}</h1>
               <div className="flex items-center gap-4 text-gray-500 mb-6">
                 <span>发起机构：{project.organization?.name}</span>
@@ -111,13 +139,23 @@ const ProjectDetail = () => {
               {activeTab === 'updates' && (
                 <div className="space-y-6">
                   {user?.role === 'org' && project.organization?.userId === user.id && (
-                    <Link
-                      to={`/create-update/${project.id}`}
-                      className="inline-flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 mb-4"
-                    >
-                      <span>+</span>
-                      发布动态
-                    </Link>
+                    <div className="flex gap-3 mb-4">
+                      {project.status !== 'completed' && (
+                        <Link
+                          to={`/projects/${project.id}/edit`}
+                          className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-100"
+                        >
+                          编辑项目
+                        </Link>
+                      )}
+                      <Link
+                        to={`/create-update/${project.id}`}
+                        className="inline-flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700"
+                      >
+                        <span>+</span>
+                        发布动态
+                      </Link>
+                    </div>
                   )}
                   {updates.length === 0 ? (
                     <p className="text-gray-500 text-center py-8">暂无项目动态</p>
@@ -197,10 +235,14 @@ const ProjectDetail = () => {
 
             <button
               onClick={handleDonateClick}
-              disabled={project.status === 'completed'}
+              disabled={project.status === 'completed' || project.status === 'paused'}
               className="w-full bg-primary-600 text-white py-4 rounded-xl font-semibold text-lg hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed mb-4"
             >
-              {project.status === 'completed' ? '项目已完成' : '立即捐赠'}
+              {project.status === 'completed'
+                ? '项目已完成'
+                : project.status === 'paused'
+                  ? '暂停筹款中'
+                  : '立即捐赠'}
             </button>
 
             <div className="text-center text-sm text-gray-500">

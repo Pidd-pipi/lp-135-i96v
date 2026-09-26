@@ -127,6 +127,151 @@ func (s *ProjectService) MyProjects(userID uint) ([]ProjectWithProgress, error) 
 	return out, nil
 }
 
+// 项目管理业务错误。
+var (
+	ErrProjectNotOwner      = errors.New("forbidden: not your project")
+	ErrProjectCompleted     = errors.New("project completed and cannot be modified")
+	ErrTargetBelowRaised    = errors.New("target amount cannot be lower than current amount")
+	ErrInvalidProjectStatus = errors.New("invalid project status for this action")
+	ErrInvalidCategory      = errors.New("invalid project category")
+	ErrInvalidDateRange     = errors.New("end date cannot be earlier than start date")
+	ErrInvalidDate          = errors.New("invalid date, expected format 2006-01-02")
+)
+
+// UpdateProjectInput 组织修改项目入参（标题不可改）。
+type UpdateProjectInput struct {
+	Description   string  `json:"description"`
+	Category      string  `json:"category" binding:"required"`
+	TargetAmount  float64 `json:"targetAmount" binding:"required,gt=0"`
+	ExecutionPlan string  `json:"executionPlan"`
+	StartDate     string  `json:"startDate"`
+	EndDate       string  `json:"endDate"`
+}
+
+// validCategories 允许的项目分类。
+var validCategories = map[string]bool{
+	constants.CategoryEducation:   true,
+	constants.CategoryElderly:     true,
+	constants.CategoryMedical:     true,
+	constants.CategoryDisaster:    true,
+	constants.CategoryEnvironment: true,
+	constants.CategoryOther:       true,
+}
+
+// UpdateProject 负责人修改自己的项目。
+// 已完成项目不可改；目标金额不得低于已筹金额；仅项目所属组织可操作。
+func (s *ProjectService) UpdateProject(userID, projectID uint, in UpdateProjectInput) (*model.Project, error) {
+	p, org, err := s.loadOwnedProject(userID, projectID)
+	if err != nil {
+		return nil, err
+	}
+	start, end, err := validateProjectUpdate(p, in)
+	if err != nil {
+		return nil, err
+	}
+
+	p.Description = in.Description
+	p.Category = in.Category
+	p.TargetAmount = in.TargetAmount
+	p.ExecutionPlan = in.ExecutionPlan
+	p.StartDate = start
+	p.EndDate = end
+	if err := s.projectRepo.Update(p); err != nil {
+		return nil, err
+	}
+	s.logger.Info("project updated", "projectId", p.ID, "orgId", org.ID)
+	return p, nil
+}
+
+// validateProjectUpdate 校验编辑入参与项目当前状态，返回解析后的起止日期。
+func validateProjectUpdate(p *model.Project, in UpdateProjectInput) (*time.Time, *time.Time, error) {
+	if p.Status == constants.ProjectCompleted {
+		return nil, nil, ErrProjectCompleted
+	}
+	if !validCategories[in.Category] {
+		return nil, nil, ErrInvalidCategory
+	}
+	if in.TargetAmount < p.CurrentAmount {
+		return nil, nil, ErrTargetBelowRaised
+	}
+	return parseDateRange(in.StartDate, in.EndDate)
+}
+
+// validateStatusAction 校验状态变更动作与当前状态是否匹配。
+func validateStatusAction(currentStatus, action string) (string, error) {
+	switch action {
+	case "pause":
+		if currentStatus != constants.ProjectApproved {
+			return "", ErrInvalidProjectStatus
+		}
+		return constants.ProjectPaused, nil
+	case "resume":
+		if currentStatus != constants.ProjectPaused {
+			return "", ErrInvalidProjectStatus
+		}
+		return constants.ProjectApproved, nil
+	default:
+		return "", ErrInvalidProjectStatus
+	}
+}
+
+// ChangeProjectStatus 筹款中项目停募（approved -> paused）或重新开放（paused -> approved）。
+func (s *ProjectService) ChangeProjectStatus(userID, projectID uint, action string) (*model.Project, error) {
+	p, org, err := s.loadOwnedProject(userID, projectID)
+	if err != nil {
+		return nil, err
+	}
+	newStatus, err := validateStatusAction(p.Status, action)
+	if err != nil {
+		return nil, err
+	}
+	p.Status = newStatus
+	if err := s.projectRepo.Update(p); err != nil {
+		return nil, err
+	}
+	s.logger.Info("project status changed", "projectId", p.ID, "orgId", org.ID, "action", action, "status", p.Status)
+	return p, nil
+}
+
+// loadOwnedProject 加载项目并校验归属。
+func (s *ProjectService) loadOwnedProject(userID, projectID uint) (*model.Project, *model.Organization, error) {
+	p, err := s.projectRepo.FindByID(projectID)
+	if err != nil {
+		return nil, nil, err
+	}
+	org, err := s.orgRepo.FindByUserID(userID)
+	if err != nil {
+		return nil, nil, err
+	}
+	if p.OrganizationID != org.ID {
+		return nil, nil, ErrProjectNotOwner
+	}
+	return p, org, nil
+}
+
+// parseDateRange 解析起止日期，空串表示清空；结束日期不得早于开始日期。
+func parseDateRange(startStr, endStr string) (*time.Time, *time.Time, error) {
+	var start, end *time.Time
+	if startStr != "" {
+		t, err := time.Parse("2006-01-02", startStr)
+		if err != nil {
+			return nil, nil, ErrInvalidDate
+		}
+		start = &t
+	}
+	if endStr != "" {
+		t, err := time.Parse("2006-01-02", endStr)
+		if err != nil {
+			return nil, nil, ErrInvalidDate
+		}
+		end = &t
+	}
+	if start != nil && end != nil && end.Before(*start) {
+		return nil, nil, ErrInvalidDateRange
+	}
+	return start, end, nil
+}
+
 // CreateUpdate 上传项目执行进展。
 func (s *ProjectService) CreateUpdate(userID, projectID uint, title, content, images string) (*model.ProjectUpdate, error) {
 	p, err := s.projectRepo.FindByID(projectID)

@@ -1,10 +1,12 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/givetrack/givetrack/internal/constants"
 	"github.com/givetrack/givetrack/internal/service"
 	"github.com/givetrack/givetrack/internal/util"
 )
@@ -24,7 +26,7 @@ func (h *ProjectHandler) List(c *gin.Context) {
 	if c.Query("limit") != "" {
 		ps = atoi(c.Query("limit"))
 	}
-	list, total, totalPages, err := h.projectSvc.List(c.Query("category"), c.DefaultQuery("status", "approved"), page, ps)
+	list, total, totalPages, err := h.projectSvc.List(c.Query("category"), c.DefaultQuery("status", "public"), page, ps)
 	if err != nil {
 		util.FailError(c, err)
 		return
@@ -135,6 +137,65 @@ func (h *ProjectHandler) CreateUpdate(c *gin.Context) {
 		return
 	}
 	util.Created(c, gin.H{"update": u})
+}
+
+// Update 负责人修改自己的项目。
+func (h *ProjectHandler) Update(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		util.Fail(c, http.StatusBadRequest, 40000, "invalid project id")
+		return
+	}
+	var req service.UpdateProjectInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		util.Fail(c, http.StatusBadRequest, 42200, err.Error())
+		return
+	}
+	p, err := h.projectSvc.UpdateProject(c.GetUint("user_id"), uint(id), req)
+	if err != nil {
+		failProjectError(c, err)
+		return
+	}
+	util.OK(c, gin.H{"project": p})
+}
+
+// ChangeStatus 停募 / 重新开放项目。
+func (h *ProjectHandler) ChangeStatus(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		util.Fail(c, http.StatusBadRequest, 40000, "invalid project id")
+		return
+	}
+	var req struct {
+		Action string `json:"action" binding:"required,oneof=pause resume"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		util.Fail(c, http.StatusBadRequest, 42200, `invalid action, expected "pause" or "resume"`)
+		return
+	}
+	p, err := h.projectSvc.ChangeProjectStatus(c.GetUint("user_id"), uint(id), req.Action)
+	if err != nil {
+		failProjectError(c, err)
+		return
+	}
+	util.OK(c, gin.H{"project": p})
+}
+
+// failProjectError 将项目管理业务错误映射为对应的 HTTP 响应。
+func failProjectError(c *gin.Context, err error) {
+	switch {
+	case errors.Is(err, service.ErrProjectNotOwner):
+		util.Fail(c, http.StatusForbidden, constants.CodeForbidden, err.Error())
+	case errors.Is(err, service.ErrProjectCompleted),
+		errors.Is(err, service.ErrTargetBelowRaised),
+		errors.Is(err, service.ErrInvalidProjectStatus),
+		errors.Is(err, service.ErrInvalidCategory),
+		errors.Is(err, service.ErrInvalidDateRange),
+		errors.Is(err, service.ErrInvalidDate):
+		util.Fail(c, http.StatusBadRequest, constants.CodeConflict, err.Error())
+	default:
+		util.FailError(c, err)
+	}
 }
 
 func atoi(s string) int {

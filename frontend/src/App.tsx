@@ -9,6 +9,8 @@ import ProjectDetail from './pages/ProjectDetail';
 import Profile from './pages/Profile';
 import Ranking from './pages/Ranking';
 import CreateProject from './pages/CreateProject';
+import EditProject from './pages/EditProject';
+import MyProjects from './pages/MyProjects';
 import CreateUpdate from './pages/CreateUpdate';
 import Admin from './pages/Admin';
 
@@ -34,6 +36,8 @@ function App() {
         <Route path="/profile" element={<Profile />} />
         <Route path="/ranking" element={<Ranking />} />
         <Route path="/create-project" element={<CreateProject />} />
+        <Route path="/my-projects" element={<MyProjects />} />
+        <Route path="/projects/:id/edit" element={<EditProject />} />
         <Route path="/create-update" element={<CreateUpdate />} />
         <Route path="/create-update/:projectId" element={<CreateUpdate />} />
         <Route path="/admin" element={<Admin />} />

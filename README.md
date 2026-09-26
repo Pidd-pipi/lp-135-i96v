@@ -95,6 +95,8 @@ go run ./cmd/server
 | GET | /projects/:id | 项目详情+捐赠记录+进展 | - |
 | POST | /projects | 发布项目 | org |
 | GET | /projects/org/my | 我的项目 | org |
+| PUT | /projects/:id | 修改项目（介绍/分类/目标金额/执行计划/起止日期） | org（本人） |
+| POST | /projects/:id/status | 停募/重新开放（body: `{"action":"pause\|resume"}`） | org（本人） |
 | GET/POST | /projects/:id/updates | 项目进展 | org |
 | POST | /donations | 捐款并生成凭证 | JWT |
 | GET | /donations/my | 我的捐赠 | JWT |

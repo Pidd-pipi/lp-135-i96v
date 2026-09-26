@@ -21,6 +21,7 @@ const (
 	ProjectPending   = "pending"
 	ProjectApproved  = "approved"
 	ProjectRejected  = "rejected"
+	ProjectPaused    = "paused"
 	ProjectCompleted = "completed"
 )
 

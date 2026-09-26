@@ -44,6 +44,7 @@ func (r *ProjectRepository) Update(p *model.Project) error {
 }
 
 // List 分页查询项目，支持分类/状态筛选。
+// status 为空或 "public" 时返回对外可见状态（approved/completed），"all" 不过滤，其余按指定状态精确筛选。
 func (r *ProjectRepository) List(category, status string, page, pageSize int) ([]model.Project, int64, error) {
 	var list []model.Project
 	var total int64
@@ -51,7 +52,12 @@ func (r *ProjectRepository) List(category, status string, page, pageSize int) ([
 	if category != "" && category != "all" {
 		q = q.Where("category = ?", category)
 	}
-	if status != "" {
+	switch status {
+	case "", "public":
+		q = q.Where("status IN ?", []string{"approved", "completed"})
+	case "all":
+		// 不追加状态过滤
+	default:
 		q = q.Where("status = ?", status)
 	}
 	if err := q.Count(&total).Error; err != nil {
