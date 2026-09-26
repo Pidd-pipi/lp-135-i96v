@@ -36,6 +36,9 @@ const Layout = () => {
                 <>
                   {user.role === 'org' && (
                     <>
+                      <NavLink to="/my-projects" className="text-gray-600 hover:text-primary-600">
+                        我的项目
+                      </NavLink>
                       <NavLink to="/create-project" className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700">
                         发布项目
                       </NavLink>

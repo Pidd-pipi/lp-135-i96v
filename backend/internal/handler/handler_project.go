@@ -97,6 +97,50 @@ func (h *ProjectHandler) MyProjects(c *gin.Context) {
 	util.OK(c, gin.H{"projects": list})
 }
 
+// Update 组织修改自己的项目（介绍/分类/目标金额/执行计划/起止日期）。
+func (h *ProjectHandler) Update(c *gin.Context) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		util.Fail(c, http.StatusBadRequest, 40000, "invalid project id")
+		return
+	}
+	var req service.UpdateProjectInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		util.Fail(c, http.StatusBadRequest, 42200, err.Error())
+		return
+	}
+	p, err := h.projectSvc.Update(c.GetUint("user_id"), uint(id), req)
+	if err != nil {
+		util.FailError(c, err)
+		return
+	}
+	util.OK(c, gin.H{"project": p})
+}
+
+// Pause 组织临时停募自己的筹款中项目。
+func (h *ProjectHandler) Pause(c *gin.Context) {
+	h.changeStatus(c, "paused")
+}
+
+// Reopen 组织重新开放自己停募的项目。
+func (h *ProjectHandler) Reopen(c *gin.Context) {
+	h.changeStatus(c, "approved")
+}
+
+func (h *ProjectHandler) changeStatus(c *gin.Context, target string) {
+	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	if err != nil {
+		util.Fail(c, http.StatusBadRequest, 40000, "invalid project id")
+		return
+	}
+	p, err := h.projectSvc.ChangeStatus(c.GetUint("user_id"), uint(id), target)
+	if err != nil {
+		util.FailError(c, err)
+		return
+	}
+	util.OK(c, gin.H{"project": p})
+}
+
 // Updates 项目进展列表。
 func (h *ProjectHandler) Updates(c *gin.Context) {
 	id, err := strconv.ParseUint(c.Param("id"), 10, 64)

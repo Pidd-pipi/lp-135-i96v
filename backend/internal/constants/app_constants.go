@@ -22,6 +22,8 @@ const (
 	ProjectApproved  = "approved"
 	ProjectRejected  = "rejected"
 	ProjectCompleted = "completed"
+	// ProjectPaused 筹款中项目被发起组织临时停募。
+	ProjectPaused = "paused"
 )
 
 // 组织审核状态

@@ -33,7 +33,7 @@ export interface Project {
   currentAmount: number;
   executionPlan?: string;
   coverImage?: string;
-  status: 'pending' | 'approved' | 'rejected' | 'completed';
+  status: 'pending' | 'approved' | 'rejected' | 'completed' | 'paused';
   startDate?: string;
   endDate?: string;
   createdAt: string;

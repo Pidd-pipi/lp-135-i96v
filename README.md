@@ -91,10 +91,13 @@ go run ./cmd/server
 | POST | /auth/login | 登录 | - |
 | GET | /auth/me | 当前用户 | JWT |
 | PUT | /auth/profile | 更新资料 | JWT |
-| GET | /projects | 项目列表（分类/状态/分页） | - |
+| GET | /projects | 项目列表（分类/状态/分页，不含停募） | - |
 | GET | /projects/:id | 项目详情+捐赠记录+进展 | - |
 | POST | /projects | 发布项目 | org |
-| GET | /projects/org/my | 我的项目 | org |
+| GET | /projects/org/my | 我的项目（含全部状态） | org |
+| PUT | /projects/:id | 修改项目（介绍/分类/目标金额/执行计划/起止日期，仅负责人） | org |
+| POST | /projects/:id/pause | 暂停筹款（仅负责人，筹款中→暂停） | org |
+| POST | /projects/:id/reopen | 重新开放筹款（仅负责人，暂停→筹款中） | org |
 | GET/POST | /projects/:id/updates | 项目进展 | org |
 | POST | /donations | 捐款并生成凭证 | JWT |
 | GET | /donations/my | 我的捐赠 | JWT |

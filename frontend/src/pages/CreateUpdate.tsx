@@ -84,7 +84,13 @@ const CreateUpdate = () => {
             <option value="">请选择要发布动态的项目</option>
             {projects.map((project) => (
               <option key={project.id} value={project.id}>
-                {project.title} ({project.status === 'approved' ? '已通过' : project.status === 'pending' ? '审核中' : '已完成'})
+                {project.title} ({
+                  project.status === 'approved' ? '筹款中'
+                  : project.status === 'pending' ? '审核中'
+                  : project.status === 'paused' ? '暂停筹款'
+                  : project.status === 'completed' ? '已完成'
+                  : '已驳回'
+                })
               </option>
             ))}
           </select>

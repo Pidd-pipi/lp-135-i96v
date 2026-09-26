@@ -45,6 +45,9 @@ export const projectAPI = {
   getProject: (id: string) => api.get(`/projects/${id}`),
   createProject: (data: any) => api.post('/projects', data),
   getMyProjects: () => api.get('/projects/org/my'),
+  updateProject: (id: string, data: any) => api.put(`/projects/${id}`, data),
+  pauseProject: (id: string) => api.post(`/projects/${id}/pause`),
+  reopenProject: (id: string) => api.post(`/projects/${id}/reopen`),
   getProjectUpdates: (projectId: string) => api.get(`/projects/${projectId}/updates`),
   createProjectUpdate: (projectId: string, data: any) => api.post(`/projects/${projectId}/updates`, data),
 };

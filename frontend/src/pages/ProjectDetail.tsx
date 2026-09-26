@@ -15,6 +15,7 @@ const ProjectDetail = () => {
   const [showDonationModal, setShowDonationModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'detail' | 'updates' | 'donations'>('detail');
+  const [statusBusy, setStatusBusy] = useState(false);
 
   useEffect(() => {
     if (id) loadProject();
@@ -30,6 +31,23 @@ const ProjectDetail = () => {
       console.error('加载项目失败:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const isOwner = user?.role === 'org' && project?.organization?.userId === user.id;
+
+  const handleTogglePause = async () => {
+    if (!project) return;
+    const pause = project.status === 'approved';
+    if (!window.confirm(pause ? '确定暂停该项目的筹款吗？' : '确定重新开放该项目的筹款吗？')) return;
+    setStatusBusy(true);
+    try {
+      const res = await (pause ? projectAPI.pauseProject(project.id) : projectAPI.reopenProject(project.id));
+      setProject(res.data.project);
+    } catch (error: any) {
+      alert(error.response?.data?.message || '操作失败');
+    } finally {
+      setStatusBusy(false);
     }
   };
 
@@ -67,6 +85,21 @@ const ProjectDetail = () => {
                 {project.status === 'completed' && (
                   <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-medium">
                     已完成
+                  </span>
+                )}
+                {project.status === 'paused' && (
+                  <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm font-medium">
+                    暂停筹款
+                  </span>
+                )}
+                {project.status === 'pending' && (
+                  <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm font-medium">
+                    审核中
+                  </span>
+                )}
+                {project.status === 'rejected' && (
+                  <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm font-medium">
+                    已驳回
                   </span>
                 )}
               </div>
@@ -197,11 +230,43 @@ const ProjectDetail = () => {
 
             <button
               onClick={handleDonateClick}
-              disabled={project.status === 'completed'}
+              disabled={project.status !== 'approved'}
               className="w-full bg-primary-600 text-white py-4 rounded-xl font-semibold text-lg hover:bg-primary-700 disabled:bg-gray-300 disabled:cursor-not-allowed mb-4"
             >
-              {project.status === 'completed' ? '项目已完成' : '立即捐赠'}
+              {project.status === 'completed' ? '项目已完成'
+                : project.status === 'paused' ? '暂停筹款中'
+                : project.status === 'pending' ? '项目审核中'
+                : project.status === 'rejected' ? '项目未通过审核'
+                : '立即捐赠'}
             </button>
+
+            {project.status === 'paused' && (
+              <p className="text-center text-sm text-orange-600 mb-4">
+                该项目已暂停筹款，捐赠与凭证记录仍可在下方查看
+              </p>
+            )}
+
+            {isOwner && (project.status === 'approved' || project.status === 'paused') && (
+              <button
+                onClick={handleTogglePause}
+                disabled={statusBusy}
+                className={`w-full py-3 rounded-xl font-medium mb-4 disabled:opacity-50 ${
+                  project.status === 'approved'
+                    ? 'bg-orange-50 text-orange-600 hover:bg-orange-100'
+                    : 'bg-green-50 text-green-600 hover:bg-green-100'
+                }`}
+              >
+                {statusBusy ? '处理中...' : project.status === 'approved' ? '暂停筹款' : '重新开放筹款'}
+              </button>
+            )}
+            {isOwner && (
+              <Link
+                to="/my-projects"
+                className="block text-center text-sm text-primary-600 hover:text-primary-700 mb-4"
+              >
+                管理我的项目（编辑信息 / 停募）
+              </Link>
+            )}
 
             <div className="text-center text-sm text-gray-500">
               已有 {donations.length} 人参与捐赠

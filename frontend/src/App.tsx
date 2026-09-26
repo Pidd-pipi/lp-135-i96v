@@ -10,6 +10,7 @@ import Profile from './pages/Profile';
 import Ranking from './pages/Ranking';
 import CreateProject from './pages/CreateProject';
 import CreateUpdate from './pages/CreateUpdate';
+import MyProjects from './pages/MyProjects';
 import Admin from './pages/Admin';
 
 function App() {
@@ -36,6 +37,7 @@ function App() {
         <Route path="/create-project" element={<CreateProject />} />
         <Route path="/create-update" element={<CreateUpdate />} />
         <Route path="/create-update/:projectId" element={<CreateUpdate />} />
+        <Route path="/my-projects" element={<MyProjects />} />
         <Route path="/admin" element={<Admin />} />
       </Route>
     </Routes>

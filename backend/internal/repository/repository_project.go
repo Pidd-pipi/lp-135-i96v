@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/givetrack/givetrack/internal/constants"
 	"github.com/givetrack/givetrack/internal/model"
 	"gorm.io/gorm"
 )
@@ -43,15 +44,17 @@ func (r *ProjectRepository) Update(p *model.Project) error {
 	return nil
 }
 
-// List 分页查询项目，支持分类/状态筛选。
+// List 分页查询公开项目，支持分类/状态筛选。
+// 停募项目不出现在任何公开列表中（组织端通过 ListByOrg 查看自己的停募项目）。
 func (r *ProjectRepository) List(category, status string, page, pageSize int) ([]model.Project, int64, error) {
 	var list []model.Project
 	var total int64
-	q := r.db.Model(&model.Project{}).Preload("Organization")
+	q := r.db.Model(&model.Project{}).Preload("Organization").
+		Where("status <> ?", constants.ProjectPaused)
 	if category != "" && category != "all" {
 		q = q.Where("category = ?", category)
 	}
-	if status != "" {
+	if status != "" && status != constants.ProjectPaused {
 		q = q.Where("status = ?", status)
 	}
 	if err := q.Count(&total).Error; err != nil {

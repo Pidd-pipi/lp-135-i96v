@@ -14,7 +14,7 @@ export interface User {
 }
 
 export type ProjectCategory = 'education' | 'elderly' | 'medical' | 'disaster' | 'environment' | 'other';
-export type ProjectStatus = 'pending' | 'approved' | 'rejected' | 'completed';
+export type ProjectStatus = 'pending' | 'approved' | 'rejected' | 'completed' | 'paused';
 
 export interface Project {
   id: string;

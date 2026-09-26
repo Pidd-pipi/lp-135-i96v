@@ -35,6 +35,11 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
                 已完成
               </span>
             )}
+            {project.status === 'paused' && (
+              <span className="px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+                暂停筹款
+              </span>
+            )}
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
             {project.title}
